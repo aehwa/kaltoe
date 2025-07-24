@@ -392,13 +392,6 @@ class WorkTimeManager {
         const savedHistory = localStorage.getItem('workHistory');
         if (savedHistory) {
             this.workHistory = JSON.parse(savedHistory);
-            
-            // 날짜 문자열을 Date 객체로 변환
-            Object.keys(this.workHistory).forEach(dateKey => {
-                const record = this.workHistory[dateKey];
-                record.startTime = new Date(record.startTime);
-                record.endTime = new Date(record.endTime);
-            });
         }
     }
     
@@ -527,11 +520,6 @@ class WorkTimeManager {
                 }
             });
             
-            // 출근 기록 추가
-            if (this.workData.startTime) {
-                // this.addHistory('출근', this.workData.startTime); // Removed
-            }
-            
             // 퇴근 버튼 상태 업데이트
             this.updateWorkButtonState();
         } else {
@@ -551,14 +539,6 @@ class WorkTimeManager {
             if (this.workData.endTime) {
                 this.showWorkSummary();
             }
-            
-            // 출근/퇴근 기록 추가
-            if (this.workData.startTime) {
-                // this.addHistory('출근', this.workData.startTime); // Removed
-            }
-            if (this.workData.endTime) {
-                // this.addHistory('퇴근', this.workData.endTime); // Removed
-            }
         }
     }
     
@@ -570,7 +550,6 @@ class WorkTimeManager {
             isWorking: false
         };
         localStorage.removeItem('workTimeData');
-        // this.elements.historyList.innerHTML = ''; // Removed
     }
 
     updateWorkButtonState() {
