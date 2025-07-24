@@ -16,7 +16,13 @@ class WorkTimeManager {
             startTime: document.getElementById('startTime'),
             elapsedTime: document.getElementById('elapsedTime'),
             endTime: document.getElementById('endTime'),
-            leaveOptions: document.getElementById('leaveOptions')
+            leaveOptions: document.getElementById('leaveOptions'),
+            editStartTimeBtn: document.getElementById('editStartTimeBtn'),
+            editTimeModal: document.getElementById('editTimeModal'),
+            editHour: document.getElementById('editHour'),
+            editMinute: document.getElementById('editMinute'),
+            cancelEditBtn: document.getElementById('cancelEditBtn'),
+            confirmEditBtn: document.getElementById('confirmEditBtn')
         };
         
         this.elapsedTimer = null;
@@ -56,6 +62,26 @@ class WorkTimeManager {
             btn.addEventListener('click', (e) => {
                 this.selectLeaveOption(parseInt(e.target.dataset.hours));
             });
+        });
+        
+        // 출근시간 수정 관련 이벤트
+        this.elements.editStartTimeBtn.addEventListener('click', () => this.openEditTimeModal());
+        this.elements.cancelEditBtn.addEventListener('click', () => this.closeEditTimeModal());
+        this.elements.confirmEditBtn.addEventListener('click', () => this.confirmEditTime());
+        
+        // 모달 외부 클릭 시 닫기
+        this.elements.editTimeModal.addEventListener('click', (e) => {
+            if (e.target === this.elements.editTimeModal) {
+                this.closeEditTimeModal();
+            }
+        });
+        
+        // Enter 키로 확인
+        this.elements.editHour.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.confirmEditTime();
+        });
+        this.elements.editMinute.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.confirmEditTime();
         });
     }
     
@@ -317,6 +343,51 @@ class WorkTimeManager {
             const remainingMinutes = Math.ceil(remainingHours * 60);
             this.elements.workBtn.textContent = `퇴근까지 ${Math.floor(remainingMinutes / 60)}시간 ${remainingMinutes % 60}분`;
         }
+    }
+
+    openEditTimeModal() {
+        if (!this.workData.startTime) return;
+        
+        // 현재 출근시간으로 입력값 설정
+        const startTime = this.workData.startTime;
+        this.elements.editHour.value = startTime.getHours();
+        this.elements.editMinute.value = startTime.getMinutes();
+        
+        this.elements.editTimeModal.style.display = 'flex';
+        this.elements.editHour.focus();
+    }
+    
+    closeEditTimeModal() {
+        this.elements.editTimeModal.style.display = 'none';
+    }
+    
+    confirmEditTime() {
+        const hour = parseInt(this.elements.editHour.value);
+        const minute = parseInt(this.elements.editMinute.value);
+        
+        // 입력값 검증
+        if (isNaN(hour) || hour < 0 || hour > 23) {
+            alert('시간은 0-23 사이의 숫자여야 합니다.');
+            return;
+        }
+        if (isNaN(minute) || minute < 0 || minute > 59) {
+            alert('분은 0-59 사이의 숫자여야 합니다.');
+            return;
+        }
+        
+        // 출근시간 수정
+        const newStartTime = new Date(this.workData.startTime);
+        newStartTime.setHours(hour, minute, 0, 0);
+        
+        this.workData.startTime = newStartTime;
+        
+        this.closeEditTimeModal();
+        this.saveWorkData();
+        this.updateDisplay();
+        this.updateWorkButtonState();
+        
+        // 수정 완료 알림
+        alert('출근시간이 수정되었습니다.');
     }
 }
 
