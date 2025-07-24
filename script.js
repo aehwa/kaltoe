@@ -22,7 +22,15 @@ class WorkTimeManager {
             editHour: document.getElementById('editHour'),
             editMinute: document.getElementById('editMinute'),
             cancelEditBtn: document.getElementById('cancelEditBtn'),
-            confirmEditBtn: document.getElementById('confirmEditBtn')
+            confirmEditBtn: document.getElementById('confirmEditBtn'),
+            remainingTime: document.getElementById('remainingTime'),
+            remainingText: document.getElementById('remainingText'),
+            workSummary: document.getElementById('workSummary'),
+            summaryStartTime: document.getElementById('summaryStartTime'),
+            summaryEndTime: document.getElementById('summaryEndTime'),
+            summaryTotalTime: document.getElementById('summaryTotalTime'),
+            summaryWorkType: document.getElementById('summaryWorkType'),
+            summaryMessage: document.getElementById('summaryMessage')
         };
         
         this.elapsedTimer = null;
@@ -94,6 +102,36 @@ class WorkTimeManager {
     }
     
     startWork() {
+        // 오늘 이미 출근한 기록이 있는지 확인
+        const today = new Date().toDateString();
+        const startDate = this.workData.startTime ? this.workData.startTime.toDateString() : null;
+        
+        if (startDate === today && !this.workData.isWorking) {
+            // 오늘 이미 출근했지만 퇴근한 상태 - 이어서 근무
+            this.workData.isWorking = true;
+            this.elements.workBtn.textContent = '퇴근하기';
+            this.elements.statusText.textContent = '근무 중';
+            this.elements.statusIndicator.className = 'status-indicator on-duty';
+            
+            this.elements.timeInfo.style.display = 'grid';
+            this.elements.leaveOptions.style.display = 'block';
+            this.elements.workSummary.style.display = 'none';
+            
+            // 휴가 옵션 버튼 상태 복원
+            document.querySelectorAll('.leave-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (parseInt(btn.dataset.hours) === (this.workData.leaveHours || 0)) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            this.saveWorkData();
+            this.updateDisplay();
+            this.updateWorkButtonState();
+            return;
+        }
+        
+        // 새로운 출근
         this.workData.startTime = new Date();
         this.workData.isWorking = true;
         this.workData.leaveHours = 0; // 기본값: 정상근무
@@ -104,6 +142,7 @@ class WorkTimeManager {
         
         this.elements.timeInfo.style.display = 'grid';
         this.elements.leaveOptions.style.display = 'block';
+        this.elements.workSummary.style.display = 'none';
         
         // 정상근무 버튼을 기본으로 활성화
         document.querySelectorAll('.leave-btn').forEach(btn => {
@@ -128,6 +167,9 @@ class WorkTimeManager {
         
         this.elements.timeInfo.style.display = 'none';
         this.elements.leaveOptions.style.display = 'none';
+        
+        // 근무 요약 표시
+        this.showWorkSummary();
         
         this.saveWorkData();
         this.updateDisplay();
@@ -175,9 +217,11 @@ class WorkTimeManager {
         this.elements.elapsedTime.textContent = 
             `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         
-        // 경과 시간이 업데이트될 때마다 퇴근 버튼 상태 확인
+        // 경과 시간이 업데이트될 때마다 퇴근 버튼 상태와 남은 시간 확인
         if (this.workData.isWorking) {
             this.updateWorkButtonState();
+            // 예상 퇴근시간 다시 계산하여 남은 시간 업데이트
+            this.updateEndTime();
         }
     }
     
@@ -203,6 +247,66 @@ class WorkTimeManager {
         endTime.setHours(endTime.getHours() + totalRequiredHours);
         
         this.elements.endTime.textContent = this.formatTime(endTime);
+        
+        // 남은 시간 계산 및 표시
+        this.updateRemainingTime(endTime);
+    }
+    
+    updateRemainingTime(endTime) {
+        if (!this.workData.isWorking) {
+            this.elements.remainingTime.style.display = 'none';
+            return;
+        }
+        
+        const now = new Date();
+        const remaining = endTime - now;
+        
+        if (remaining <= 0) {
+            // 퇴근 시간이 지남 - 초과 시간 계산
+            const overtime = Math.abs(remaining);
+            const overtimeHours = Math.floor(overtime / (1000 * 60 * 60));
+            const overtimeMinutes = Math.floor((overtime % (1000 * 60 * 60)) / (1000 * 60));
+            
+            this.elements.remainingTime.style.display = 'block';
+            
+            if (overtimeMinutes <= 10) {
+                // 퇴근 완료 후 10분 이하 - 초록색 (칼퇴 성공!)
+                this.elements.remainingTime.className = 'remaining-time complete';
+                if (overtimeMinutes === 0) {
+                    this.elements.remainingText.textContent = '퇴근 가능합니다!';
+                } else {
+                    this.elements.remainingText.textContent = `퇴근 완료! (${overtimeMinutes}분 초과)`;
+                }
+            } else {
+                // 퇴근 완료 후 10분 초과 - 빨간색 (늦은 퇴근)
+                this.elements.remainingTime.className = 'remaining-time urgent';
+                if (overtimeHours > 0) {
+                    this.elements.remainingText.textContent = `퇴근 ${overtimeHours}시간 ${overtimeMinutes}분 초과!`;
+                } else {
+                    this.elements.remainingText.textContent = `퇴근 ${overtimeMinutes}분 초과!`;
+                }
+            }
+        } else {
+            // 퇴근 시간까지 남음
+            const remainingHours = Math.floor(remaining / (1000 * 60 * 60));
+            const remainingMinutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+            
+            this.elements.remainingTime.style.display = 'block';
+            
+            if (remainingHours === 0 && remainingMinutes <= 30) {
+                // 30분 이하 남음 - 초록색 (칼퇴 준비!)
+                this.elements.remainingTime.className = 'remaining-time complete';
+                this.elements.remainingText.textContent = `퇴근까지 ${remainingMinutes}분 남음`;
+            } else {
+                // 일반 표시 - 회색
+                this.elements.remainingTime.className = 'remaining-time';
+                if (remainingHours > 0) {
+                    this.elements.remainingText.textContent = `퇴근까지 ${remainingHours}시간 ${remainingMinutes}분 남음`;
+                } else {
+                    this.elements.remainingText.textContent = `퇴근까지 ${remainingMinutes}분 남음`;
+                }
+            }
+        }
     }
     
     startElapsedTimer() {
@@ -262,6 +366,7 @@ class WorkTimeManager {
             
             this.elements.timeInfo.style.display = 'grid';
             this.elements.leaveOptions.style.display = 'block';
+            this.elements.workSummary.style.display = 'none';
             
             // 휴가 옵션 버튼 상태 복원 (기본값: 정상근무)
             document.querySelectorAll('.leave-btn').forEach(btn => {
@@ -290,6 +395,11 @@ class WorkTimeManager {
             
             this.elements.timeInfo.style.display = 'none';
             this.elements.leaveOptions.style.display = 'none';
+            
+            // 근무 요약 표시 (퇴근한 상태라면)
+            if (this.workData.endTime) {
+                this.showWorkSummary();
+            }
             
             // 출근/퇴근 기록 추가
             if (this.workData.startTime) {
@@ -396,6 +506,38 @@ class WorkTimeManager {
         
         // 수정 완료 알림
         alert('출근시간이 수정되었습니다.');
+    }
+
+    showWorkSummary() {
+        if (!this.workData.startTime || !this.workData.endTime) return;
+        
+        // 요약 데이터 설정
+        this.elements.summaryStartTime.textContent = this.formatTime(this.workData.startTime);
+        this.elements.summaryEndTime.textContent = this.formatTime(this.workData.endTime);
+        
+        // 총 근무 시간 계산
+        const totalTime = this.workData.endTime - this.workData.startTime;
+        const totalHours = Math.floor(totalTime / (1000 * 60 * 60));
+        const totalMinutes = Math.floor((totalTime % (1000 * 60 * 60)) / (1000 * 60));
+        this.elements.summaryTotalTime.textContent = `${totalHours}시간 ${totalMinutes}분`;
+        
+        // 근무 형태 설정
+        let workType = '정상근무';
+        if (this.workData.leaveHours === 2) workType = '반반차';
+        else if (this.workData.leaveHours === 4) workType = '반차';
+        this.elements.summaryWorkType.textContent = workType;
+        
+        // 메시지 설정
+        const requiredHours = this.workData.leaveHours === 4 ? 4 : 8;
+        const actualHours = totalHours + (totalMinutes / 60);
+        
+        if (actualHours >= requiredHours) {
+            this.elements.summaryMessage.textContent = '오늘도 수고하셨습니다! 🎉';
+        } else {
+            this.elements.summaryMessage.textContent = '조금 더 힘내세요! 💪';
+        }
+        
+        this.elements.workSummary.style.display = 'block';
     }
 }
 

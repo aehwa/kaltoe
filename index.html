@@ -39,6 +39,9 @@
                 <div class="time-card">
                     <h3>예상 퇴근 시간</h3>
                     <div class="time-display" id="endTime">--:--</div>
+                    <div class="remaining-time" id="remainingTime" style="display: none;">
+                        <span id="remainingText">퇴근까지 남은 시간</span>
+                    </div>
                 </div>
             </div>
 
@@ -69,6 +72,32 @@
                     <button class="leave-btn" data-hours="0">정상근무</button>
                     <button class="leave-btn" data-hours="2">반반차 (2시간)</button>
                     <button class="leave-btn" data-hours="4">반차 (4시간)</button>
+                </div>
+            </div>
+
+            <!-- 오늘 근무 요약 -->
+            <div class="work-summary" id="workSummary" style="display: none;">
+                <h3>오늘 근무 완료!</h3>
+                <div class="summary-content">
+                    <div class="summary-item">
+                        <span class="summary-label">출근 시간:</span>
+                        <span class="summary-value" id="summaryStartTime">--:--</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">퇴근 시간:</span>
+                        <span class="summary-value" id="summaryEndTime">--:--</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">총 근무 시간:</span>
+                        <span class="summary-value" id="summaryTotalTime">--:--</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">근무 형태:</span>
+                        <span class="summary-value" id="summaryWorkType">정상근무</span>
+                    </div>
+                </div>
+                <div class="summary-message" id="summaryMessage">
+                    오늘도 수고하셨습니다! 🎉
                 </div>
             </div>
         </main>
