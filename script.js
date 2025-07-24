@@ -96,7 +96,7 @@ class WorkTimeManager {
     startWork() {
         this.workData.startTime = new Date();
         this.workData.isWorking = true;
-        this.workData.leaveHours = 0;
+        this.workData.leaveHours = 0; // 기본값: 정상근무
         
         this.elements.workBtn.textContent = '퇴근하기';
         this.elements.statusText.textContent = '근무 중';
@@ -104,6 +104,14 @@ class WorkTimeManager {
         
         this.elements.timeInfo.style.display = 'grid';
         this.elements.leaveOptions.style.display = 'block';
+        
+        // 정상근무 버튼을 기본으로 활성화
+        document.querySelectorAll('.leave-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (parseInt(btn.dataset.hours) === 0) {
+                btn.classList.add('active');
+            }
+        });
         
         this.saveWorkData();
         this.updateDisplay();
@@ -255,10 +263,10 @@ class WorkTimeManager {
             this.elements.timeInfo.style.display = 'grid';
             this.elements.leaveOptions.style.display = 'block';
             
-            // 휴가 옵션 버튼 상태 복원
+            // 휴가 옵션 버튼 상태 복원 (기본값: 정상근무)
             document.querySelectorAll('.leave-btn').forEach(btn => {
                 btn.classList.remove('active');
-                if (parseInt(btn.dataset.hours) === this.workData.leaveHours) {
+                if (parseInt(btn.dataset.hours) === (this.workData.leaveHours || 0)) {
                     btn.classList.add('active');
                 }
             });
