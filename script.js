@@ -33,6 +33,7 @@ class WorkTimeManager {
             summaryEndTime: document.getElementById('summaryEndTime'),
             summaryTotalTime: document.getElementById('summaryTotalTime'),
             summaryWorkType: document.getElementById('summaryWorkType'),
+            summaryOvertime: document.getElementById('summaryOvertime'),
             summaryMessage: document.getElementById('summaryMessage'),
             historyList: document.getElementById('historyList')
         };
@@ -168,11 +169,17 @@ class WorkTimeManager {
     }
     
     endWork() {
+        console.log('🏠 endWork() 시작');
         this.workData.endTime = new Date();
         this.workData.isWorking = false;
+        console.log('📊 퇴근 후 workData:', this.workData);
         
-        this.elements.workBtn.textContent = '출근하기';
-        this.elements.statusText.textContent = '출근 전';
+        // 먼저 데이터 저장 (showWorkSummary에서 오류가 발생해도 데이터는 저장)
+        this.saveWorkData();
+        console.log('💾 endWork에서 데이터 저장 완료');
+        
+        this.elements.workBtn.textContent = '다시 출근';
+        this.elements.statusText.textContent = '퇴근 완료';
         this.elements.statusIndicator.className = 'status-indicator off-duty';
         
         this.elements.timeInfo.style.display = 'none';
@@ -181,7 +188,6 @@ class WorkTimeManager {
         // 근무 요약 표시
         this.showWorkSummary();
         
-        this.saveWorkData();
         this.updateDisplay();
         
         // 타이머 정지
@@ -470,40 +476,58 @@ class WorkTimeManager {
     }
     
     loadWorkData() {
+        console.log('🔍 loadWorkData() 시작');
         const savedData = localStorage.getItem('workTimeData');
+        console.log('📦 저장된 데이터:', savedData);
+        
         if (savedData) {
             const data = JSON.parse(savedData);
+            console.log('📋 파싱된 데이터:', data);
+            
             this.workData = {
                 ...data,
                 startTime: data.startTime ? new Date(data.startTime) : null,
                 endTime: data.endTime ? new Date(data.endTime) : null
             };
+            console.log('🔄 변환된 workData:', this.workData);
             
             // 오늘 날짜가 아니면 데이터 초기화 (단, 퇴근 완료된 데이터는 유지)
             const today = new Date().toDateString();
             const startDate = this.workData.startTime ? this.workData.startTime.toDateString() : null;
+            console.log('📅 오늘 날짜:', today);
+            console.log('📅 시작 날짜:', startDate);
             
             if (startDate && startDate !== today) {
+                console.log('⚠️ 다른 날짜의 데이터 발견');
                 // 퇴근이 완료된 경우 근무 요약은 유지
                 if (this.workData.endTime) {
+                    console.log('✅ 퇴근 완료된 데이터 - 근무 요약 유지');
                     this.workData.isWorking = false;
-                    this.workData.startTime = null; // 출근시간만 초기화
+                    // startTime은 유지 (근무 요약 표시를 위해)
                     this.workData.leaveHours = 0;
                     this.saveWorkData();
                     this.restoreUIState();
                 } else {
+                    console.log('❌ 퇴근하지 않은 데이터 - 완전 초기화');
                     // 퇴근하지 않은 경우 완전 초기화
                     this.resetData();
                 }
             } else {
+                console.log('✅ 오늘 날짜의 데이터 - UI 상태 복원');
                 // 저장된 데이터가 있으면 UI 상태 복원
                 this.restoreUIState();
             }
+        } else {
+            console.log('📭 저장된 데이터 없음');
         }
     }
     
     restoreUIState() {
+        console.log('🔄 restoreUIState() 시작');
+        console.log('📊 현재 workData:', this.workData);
+        
         if (this.workData.isWorking) {
+            console.log('💼 근무 중 상태로 복원');
             // 근무 중인 상태로 복원
             this.elements.statusText.textContent = '근무 중';
             this.elements.statusIndicator.className = 'status-indicator on-duty';
@@ -523,21 +547,30 @@ class WorkTimeManager {
             // 퇴근 버튼 상태 업데이트
             this.updateWorkButtonState();
         } else {
+            console.log('🏠 퇴근한 상태로 복원');
             // 퇴근한 상태로 복원
-            this.elements.workBtn.textContent = '출근하기';
+            this.elements.workBtn.textContent = '다시 출근';
             this.elements.workBtn.disabled = false;
             this.elements.workBtn.style.opacity = '1';
             this.elements.workBtn.style.cursor = 'pointer';
             
-            this.elements.statusText.textContent = '출근 전';
+            this.elements.statusText.textContent = '퇴근 완료';
             this.elements.statusIndicator.className = 'status-indicator off-duty';
             
             this.elements.timeInfo.style.display = 'none';
             this.elements.leaveOptions.style.display = 'none';
             
             // 근무 요약 표시 (퇴근한 상태라면)
-            if (this.workData.endTime) {
+            console.log('🔍 startTime 확인:', this.workData.startTime);
+            console.log('🔍 endTime 확인:', this.workData.endTime);
+            
+            if (this.workData.startTime && this.workData.endTime) {
+                console.log('✅ 근무 요약 표시 시도');
                 this.showWorkSummary();
+            } else {
+                console.log('❌ startTime 또는 endTime 없음 - 데이터 초기화');
+                // endTime이 없는 경우 (이전 데이터 문제) 초기화
+                this.resetData();
             }
         }
     }
@@ -653,8 +686,16 @@ class WorkTimeManager {
     }
 
     showWorkSummary() {
-        if (!this.workData.startTime || !this.workData.endTime) return;
+        console.log('📋 showWorkSummary() 시작');
+        console.log('🔍 startTime 확인:', this.workData.startTime);
+        console.log('🔍 endTime 확인:', this.workData.endTime);
         
+        if (!this.workData.startTime || !this.workData.endTime) {
+            console.log('❌ startTime 또는 endTime 없음 - showWorkSummary 종료');
+            return;
+        }
+        
+        console.log('✅ 근무 요약 표시 시작');
         // 요약 데이터 설정
         this.elements.summaryStartTime.textContent = this.formatTime(this.workData.startTime);
         this.elements.summaryEndTime.textContent = this.formatTime(this.workData.endTime);
@@ -670,6 +711,27 @@ class WorkTimeManager {
         if (this.workData.leaveHours === 2) workType = '반반차';
         else if (this.workData.leaveHours === 4) workType = '반차';
         this.elements.summaryWorkType.textContent = workType;
+        
+        // 초과근무 시간 계산 및 표시
+        let requiredHoursForOvertime;
+        if (this.workData.leaveHours === 4) {
+            requiredHoursForOvertime = 4; // 반차: 4시간 (휴게시간 없음)
+        } else if (this.workData.leaveHours === 2) {
+            requiredHoursForOvertime = 7; // 반반차: 6시간 근무 + 1시간 휴게
+        } else {
+            requiredHoursForOvertime = 9; // 정상근무: 8시간 근무 + 1시간 휴게
+        }
+        
+        const actualHoursForOvertime = totalHours + (totalMinutes / 60);
+        const overtimeHoursForDisplay = actualHoursForOvertime - requiredHoursForOvertime;
+        
+        if (overtimeHoursForDisplay > 0) {
+            const overtimeHoursInt = Math.floor(overtimeHoursForDisplay);
+            const overtimeMinutesInt = Math.floor((overtimeHoursForDisplay - overtimeHoursInt) * 60);
+            this.elements.summaryOvertime.textContent = `${overtimeHoursInt}시간 ${overtimeMinutesInt}분`;
+        } else {
+            this.elements.summaryOvertime.textContent = '0시간 0분';
+        }
         
         // 메시지 설정
         let requiredHours;
@@ -693,6 +755,7 @@ class WorkTimeManager {
         }
         
         this.elements.workSummary.style.display = 'block';
+        console.log('✅ workSummary 표시 완료');
         
         // 이전 근무 기록 표시
         this.showWorkHistoryInUI();
