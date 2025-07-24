@@ -375,7 +375,7 @@ class WorkTimeManager {
         
         // 입력값 검증
         if (isNaN(hour) || hour < 0 || hour > 23) {
-            alert('시간은 0-23 사이의 숫자여야 합니다.');
+            alert('시는 0-23 사이의 숫자여야 합니다.');
             return;
         }
         if (isNaN(minute) || minute < 0 || minute > 59) {

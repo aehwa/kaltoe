@@ -47,10 +47,14 @@
                 <div class="modal-content">
                     <h3>출근시간 수정</h3>
                     <div class="time-input-group">
-                        <label for="editHour">시간:</label>
-                        <input type="number" id="editHour" min="0" max="23" value="9">
-                        <label for="editMinute">분:</label>
-                        <input type="number" id="editMinute" min="0" max="59" value="0">
+                        <div class="time-input-item">
+                            <input type="number" id="editHour" min="0" max="23" value="9">
+                            <span class="time-unit">시</span>
+                        </div>
+                        <div class="time-input-item">
+                            <input type="number" id="editMinute" min="0" max="59" value="0">
+                            <span class="time-unit">분</span>
+                        </div>
                     </div>
                     <div class="modal-buttons">
                         <button class="modal-btn cancel-btn" id="cancelEditBtn">취소</button>
