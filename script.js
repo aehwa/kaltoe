@@ -35,7 +35,8 @@ class WorkTimeManager {
             summaryWorkType: document.getElementById('summaryWorkType'),
             summaryOvertime: document.getElementById('summaryOvertime'),
             summaryMessage: document.getElementById('summaryMessage'),
-            historyList: document.getElementById('historyList')
+            historyList: document.getElementById('historyList'),
+            historyListBeforeWork: document.getElementById('historyListBeforeWork') // 출근 전 이력 리스트
         };
         
         this.elapsedTimer = null;
@@ -187,6 +188,9 @@ class WorkTimeManager {
         
         this.updateDisplay();
         
+        // 퇴근 후 이력 표시 업데이트
+        this.updateHistorySectionVisibility();
+        
         // 타이머 정지
         if (this.elapsedTimer) {
             clearInterval(this.elapsedTimer);
@@ -216,6 +220,74 @@ class WorkTimeManager {
             this.updateElapsedTime();
             this.updateEndTime();
         }
+        // 출근 상태에 따라 이력 표시 제어 (DOM이 로드된 후에만)
+        setTimeout(() => this.updateHistorySectionVisibility(), 0);
+    }
+
+    updateHistorySectionVisibility() {
+        const historySection = document.getElementById('historyBeforeWork');
+        if (!historySection) return;
+        if (this.workData.isWorking) {
+            // 근무 중: 숨김
+            historySection.style.display = 'none';
+        } else {
+            // 근무 중이 아닐 때(출근 전, 퇴근 후): 표시
+            historySection.style.display = 'block';
+            // 이력 데이터를 다시 로드하여 최신 상태로 표시
+            this.loadWorkHistory();
+            this.showWorkHistoryInUIForMain();
+        }
+    }
+
+    showWorkHistoryInUIForMain() {
+        const history = this.getWorkHistory();
+        const historyList = document.getElementById('historyListBeforeWork');
+        if (!historyList) {
+            return;
+        }
+        // 기존 내용 초기화
+        historyList.innerHTML = '';
+        if (Object.keys(history).length === 0) {
+            historyList.innerHTML = '<div class="no-history">저장된 근무 기록이 없습니다.</div>';
+            return;
+        }
+        // 최근 30일간의 기록만 표시 (최신순)
+        const sortedDates = Object.keys(history).sort().reverse().slice(0, 30);
+        sortedDates.forEach(dateKey => {
+            const record = history[dateKey];
+            const startTime = this.formatTime(record.startTime);
+            const endTime = this.formatTime(record.endTime);
+            const totalHours = Math.floor(record.totalHours);
+            const totalMinutes = Math.floor((record.totalHours - totalHours) * 60);
+            const workType = this.getWorkTypeText(record.leaveHours);
+            
+            // 초과시간 계산
+            const requiredHours = this.calculateRequiredHoursForRecord(record.leaveHours);
+            const overtimeHours = Math.max(0, record.totalHours - requiredHours);
+            const overtimeHoursInt = Math.floor(overtimeHours);
+            const overtimeMinutesInt = Math.floor((overtimeHours - overtimeHoursInt) * 60);
+            
+            // 날짜 포맷팅 (월/일)
+            const date = new Date(dateKey);
+            const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
+            
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            
+            // 초과시간이 0일 때는 표시하지 않음
+            const overtimeDisplay = overtimeHours > 0.1 ? 
+                `<div class="history-overtime">${overtimeHoursInt}h ${overtimeMinutesInt}m</div>` : 
+                `<div class="history-overtime-none">-</div>`;
+            
+            historyItem.innerHTML = `
+                <div class="history-date">${formattedDate}</div>
+                <div class="history-time">${startTime} ~ ${endTime}</div>
+                <div class="history-duration">${totalHours}h ${totalMinutes}m</div>
+                <div class="history-type">${workType}</div>
+                ${overtimeDisplay}
+            `;
+            historyList.appendChild(historyItem);
+        });
     }
     
     updateElapsedTime() {
@@ -488,29 +560,36 @@ class WorkTimeManager {
                     endTime: data.endTime ? new Date(data.endTime) : null
                 };
                 
-                // 오늘 날짜가 아니면 데이터 초기화 (단, 퇴근 완료된 데이터는 유지)
+                // 오늘 날짜가 아니면 데이터 초기화
                 const today = new Date().toDateString();
                 const startDate = this.workData.startTime ? this.workData.startTime.toDateString() : null;
                 
                 if (startDate && startDate !== today) {
-                    // 퇴근이 완료된 경우 근무 요약은 유지
-                    if (this.workData.endTime) {
-                        this.workData.isWorking = false;
-                        // startTime은 유지 (근무 요약 표시를 위해)
-                        this.workData.leaveHours = 0;
-                        this.saveWorkData();
-                        this.restoreUIState();
-                    } else {
-                        // 퇴근하지 않은 경우 완전 초기화
-                        this.resetData();
-                    }
+                    // 다른 날짜의 데이터는 완전 초기화 (이력은 별도로 저장되어 있음)
+                    this.resetData();
                 } else {
-                    // 저장된 데이터가 있으면 UI 상태 복원
+                    // 오늘 데이터가 있으면 UI 상태 복원
                     this.restoreUIState();
                 }
             } catch (error) {
                 console.error('데이터 로드 중 오류:', error);
                 this.resetData();
+            }
+        } else {
+            // 저장된 데이터가 없어도 이력은 표시
+            this.updateHistorySectionVisibility();
+            
+            // workHistory에서 오늘 데이터 확인
+            const today = new Date().toDateString();
+            const todayRecord = this.workHistory[today];
+            
+            if (todayRecord) {
+                // workHistory에 오늘 데이터가 있으면 복원
+                this.workData.startTime = todayRecord.startTime;
+                this.workData.endTime = todayRecord.endTime;
+                this.workData.leaveHours = todayRecord.leaveHours;
+                this.workData.isWorking = false;
+                this.showWorkSummary();
             }
         }
     }
@@ -552,8 +631,20 @@ class WorkTimeManager {
             if (this.workData.startTime && this.workData.endTime) {
                 this.showWorkSummary();
             } else {
-                // endTime이 없는 경우 (이전 데이터 문제) 초기화
-                this.resetData();
+                // endTime이 없는 경우 - workHistory에서 오늘 데이터 확인
+                const today = new Date().toDateString();
+                const todayRecord = this.workHistory[today];
+                if (todayRecord) {
+                    // workHistory에 오늘 데이터가 있으면 복원
+                    this.workData.startTime = todayRecord.startTime;
+                    this.workData.endTime = todayRecord.endTime;
+                    this.workData.leaveHours = todayRecord.leaveHours;
+                    this.workData.isWorking = false;
+                    this.showWorkSummary();
+                } else {
+                    // 데이터가 없으면 초기화
+                    this.resetData();
+                }
             }
         }
     }
@@ -695,9 +786,6 @@ class WorkTimeManager {
         }
         
         this.elements.workSummary.style.display = 'block';
-        
-        // 이전 근무 기록 표시
-        this.showWorkHistoryInUI();
     }
     
     showWorkHistoryInUI() {
@@ -760,6 +848,22 @@ class WorkTimeManager {
             breakHours,
             totalRequiredHours: workHours + breakHours
         };
+    }
+    
+    calculateRequiredHoursForRecord(leaveHours) {
+        let workHours, breakHours;
+        
+        if (leaveHours === 4) {
+            // 반차: 휴게시간 없이 4시간만 근무
+            workHours = 4;
+            breakHours = 0;
+        } else {
+            // 정상근무 또는 반반차: 휴게시간 포함
+            workHours = 8 - leaveHours;
+            breakHours = 1;
+        }
+        
+        return workHours + breakHours;
     }
     
     getWorkTypeText(leaveHours) {
