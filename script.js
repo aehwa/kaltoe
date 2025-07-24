@@ -287,16 +287,16 @@ class WorkTimeManager {
             const overtimeHours = Math.floor(overtime / (1000 * 60 * 60));
             const overtimeMinutes = Math.floor((overtime % (1000 * 60 * 60)) / (1000 * 60));
             
-            if (overtimeMinutes <= 30) {
+            if (overtimeMinutes <= 30 && overtimeHours === 0) {
                 // 퇴근 완료 후 30분 이하 - 초록색 (칼퇴 성공!)
                 newClassName = 'remaining-time complete';
                 if (overtimeMinutes === 0) {
                     newText = '퇴근 가능합니다!';
                 } else {
-                    newText = `퇴근 완료! (${overtimeMinutes}분 초과)`;
+                    newText = `어서 퇴근하세요! (${overtimeMinutes}분 초과)`;
                 }
             } else {
-                // 퇴근 완료 후 30분 초과 - 빨간색 (늦은 퇴근)
+                // 퇴근 완료 후 30분 초과 또는 1시간 이상 초과 - 빨간색 (늦은 퇴근)
                 newClassName = 'remaining-time urgent';
                 if (overtimeHours > 0) {
                     newText = `퇴근 ${overtimeHours}시간 ${overtimeMinutes}분 초과!`;
