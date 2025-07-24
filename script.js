@@ -7,6 +7,9 @@ class WorkTimeManager {
             isWorking: false
         };
         
+        // 근무 이력 저장소 추가
+        this.workHistory = {};
+        
         this.elements = {
             currentDate: document.getElementById('currentDate'),
             statusIndicator: document.getElementById('statusIndicator'),
@@ -30,7 +33,8 @@ class WorkTimeManager {
             summaryEndTime: document.getElementById('summaryEndTime'),
             summaryTotalTime: document.getElementById('summaryTotalTime'),
             summaryWorkType: document.getElementById('summaryWorkType'),
-            summaryMessage: document.getElementById('summaryMessage')
+            summaryMessage: document.getElementById('summaryMessage'),
+            historyList: document.getElementById('historyList')
         };
         
         this.elapsedTimer = null;
@@ -40,6 +44,7 @@ class WorkTimeManager {
     init() {
         this.updateCurrentDate();
         this.loadWorkData();
+        this.loadWorkHistory(); // 근무 이력 로드 추가
         this.setupEventListeners();
         this.updateDisplay();
         this.startElapsedTimer();
@@ -355,6 +360,120 @@ class WorkTimeManager {
         };
         
         localStorage.setItem('workTimeData', JSON.stringify(dataToSave));
+        
+        // 근무 이력도 함께 저장
+        this.saveWorkHistory();
+    }
+    
+    saveWorkHistory() {
+        // 오늘 날짜를 키로 사용
+        const today = new Date().toDateString();
+        
+        // 퇴근이 완료된 경우에만 이력에 저장
+        if (this.workData.startTime && this.workData.endTime) {
+            const workRecord = {
+                startTime: this.workData.startTime.toISOString(),
+                endTime: this.workData.endTime.toISOString(),
+                leaveHours: this.workData.leaveHours,
+                totalHours: this.calculateTotalWorkHours(),
+                date: today
+            };
+            
+            this.workHistory[today] = workRecord;
+            
+            // 최근 30일간의 이력만 유지
+            this.cleanupOldHistory();
+            
+            localStorage.setItem('workHistory', JSON.stringify(this.workHistory));
+        }
+    }
+    
+    loadWorkHistory() {
+        const savedHistory = localStorage.getItem('workHistory');
+        if (savedHistory) {
+            this.workHistory = JSON.parse(savedHistory);
+            
+            // 날짜 문자열을 Date 객체로 변환
+            Object.keys(this.workHistory).forEach(dateKey => {
+                const record = this.workHistory[dateKey];
+                record.startTime = new Date(record.startTime);
+                record.endTime = new Date(record.endTime);
+            });
+        }
+    }
+    
+    cleanupOldHistory() {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        Object.keys(this.workHistory).forEach(dateKey => {
+            const recordDate = new Date(dateKey);
+            if (recordDate < thirtyDaysAgo) {
+                delete this.workHistory[dateKey];
+            }
+        });
+    }
+    
+    calculateTotalWorkHours() {
+        if (!this.workData.startTime || !this.workData.endTime) return 0;
+        
+        const totalTime = this.workData.endTime - this.workData.startTime;
+        return totalTime / (1000 * 60 * 60); // 시간 단위로 반환
+    }
+    
+    getWorkHistory() {
+        return this.workHistory;
+    }
+    
+    // 근무 이력 확인 함수 (콘솔에서 사용 가능)
+    showWorkHistory() {
+        console.log('=== 근무 이력 ===');
+        const history = this.getWorkHistory();
+        
+        if (Object.keys(history).length === 0) {
+            console.log('저장된 근무 이력이 없습니다.');
+            return;
+        }
+        
+        Object.keys(history).sort().reverse().forEach(dateKey => {
+            const record = history[dateKey];
+            const startTime = this.formatTime(record.startTime);
+            const endTime = this.formatTime(record.endTime);
+            const totalHours = Math.floor(record.totalHours);
+            const totalMinutes = Math.floor((record.totalHours - totalHours) * 60);
+            
+            let workType = '정상근무';
+            if (record.leaveHours === 2) workType = '반반차';
+            else if (record.leaveHours === 4) workType = '반차';
+            
+            console.log(`${dateKey}: ${startTime} ~ ${endTime} (${totalHours}시간 ${totalMinutes}분, ${workType})`);
+        });
+        
+        // 주간 통계
+        this.showWeeklyStats();
+    }
+    
+    showWeeklyStats() {
+        console.log('\n=== 이번 주 통계 ===');
+        const history = this.getWorkHistory();
+        const today = new Date();
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay()); // 이번 주 일요일
+        
+        let weeklyHours = 0;
+        let workDays = 0;
+        
+        Object.keys(history).forEach(dateKey => {
+            const recordDate = new Date(dateKey);
+            if (recordDate >= weekStart && recordDate <= today) {
+                weeklyHours += record.totalHours;
+                workDays++;
+            }
+        });
+        
+        console.log(`근무일수: ${workDays}일`);
+        console.log(`총 근무시간: ${Math.floor(weeklyHours)}시간 ${Math.floor((weeklyHours - Math.floor(weeklyHours)) * 60)}분`);
+        console.log(`평균 근무시간: ${workDays > 0 ? (weeklyHours / workDays).toFixed(1) : 0}시간`);
     }
     
     loadWorkData() {
@@ -595,6 +714,52 @@ class WorkTimeManager {
         }
         
         this.elements.workSummary.style.display = 'block';
+        
+        // 이전 근무 기록 표시
+        this.showWorkHistoryInUI();
+    }
+    
+    showWorkHistoryInUI() {
+        const history = this.getWorkHistory();
+        const historyList = this.elements.historyList;
+        
+        // 기존 내용 초기화
+        historyList.innerHTML = '';
+        
+        if (Object.keys(history).length === 0) {
+            historyList.innerHTML = '<div class="no-history">저장된 근무 기록이 없습니다.</div>';
+            return;
+        }
+        
+        // 최근 7일간의 기록만 표시 (최신순)
+        const sortedDates = Object.keys(history).sort().reverse().slice(0, 7);
+        
+        sortedDates.forEach(dateKey => {
+            const record = history[dateKey];
+            const startTime = this.formatTime(record.startTime);
+            const endTime = this.formatTime(record.endTime);
+            const totalHours = Math.floor(record.totalHours);
+            const totalMinutes = Math.floor((record.totalHours - totalHours) * 60);
+            
+            let workType = '정상';
+            if (record.leaveHours === 2) workType = '반반차';
+            else if (record.leaveHours === 4) workType = '반차';
+            
+            // 날짜 포맷팅 (월/일)
+            const date = new Date(dateKey);
+            const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
+            
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            historyItem.innerHTML = `
+                <div class="history-date">${formattedDate}</div>
+                <div class="history-time">${startTime} ~ ${endTime}</div>
+                <div class="history-duration">${totalHours}h ${totalMinutes}m</div>
+                <div class="history-type">${workType}</div>
+            `;
+            
+            historyList.appendChild(historyItem);
+        });
     }
 }
 
