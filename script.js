@@ -59,7 +59,12 @@ class WorkTimeManager {
             minute: '2-digit',
             second: '2-digit'
         };
-        this.elements.currentDate.textContent = now.toLocaleDateString('ko-KR', options);
+        const newDateString = now.toLocaleDateString('ko-KR', options);
+        
+        // 값이 변경된 경우에만 DOM 업데이트
+        if (this.elements.currentDate.textContent !== newDateString) {
+            this.elements.currentDate.textContent = newDateString;
+        }
     }
     
     setupEventListeners() {
@@ -214,14 +219,18 @@ class WorkTimeManager {
         const minutes = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((elapsed % (1000 * 60)) / 1000);
         
-        this.elements.elapsedTime.textContent = 
-            `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        const newTimeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         
-        // 경과 시간이 업데이트될 때마다 퇴근 버튼 상태와 남은 시간 확인
-        if (this.workData.isWorking) {
-            this.updateWorkButtonState();
-            // 예상 퇴근시간 다시 계산하여 남은 시간 업데이트
-            this.updateEndTime();
+        // 값이 변경된 경우에만 DOM 업데이트
+        if (this.elements.elapsedTime.textContent !== newTimeString) {
+            this.elements.elapsedTime.textContent = newTimeString;
+            
+            // 경과 시간이 업데이트될 때마다 퇴근 버튼 상태와 남은 시간 확인
+            if (this.workData.isWorking) {
+                this.updateWorkButtonState();
+                // 예상 퇴근시간 다시 계산하여 남은 시간 업데이트
+                this.updateEndTime();
+            }
         }
     }
     
@@ -254,12 +263,18 @@ class WorkTimeManager {
     
     updateRemainingTime(endTime) {
         if (!this.workData.isWorking) {
-            this.elements.remainingTime.style.display = 'none';
+            if (this.elements.remainingTime.style.display !== 'none') {
+                this.elements.remainingTime.style.display = 'none';
+            }
             return;
         }
         
         const now = new Date();
         const remaining = endTime - now;
+        
+        let newText = '';
+        let newClassName = '';
+        let shouldShow = true;
         
         if (remaining <= 0) {
             // 퇴근 시간이 지남 - 초과 시간 계산
@@ -267,23 +282,21 @@ class WorkTimeManager {
             const overtimeHours = Math.floor(overtime / (1000 * 60 * 60));
             const overtimeMinutes = Math.floor((overtime % (1000 * 60 * 60)) / (1000 * 60));
             
-            this.elements.remainingTime.style.display = 'block';
-            
-            if (overtimeMinutes <= 10) {
-                // 퇴근 완료 후 10분 이하 - 초록색 (칼퇴 성공!)
-                this.elements.remainingTime.className = 'remaining-time complete';
+            if (overtimeMinutes <= 30) {
+                // 퇴근 완료 후 30분 이하 - 초록색 (칼퇴 성공!)
+                newClassName = 'remaining-time complete';
                 if (overtimeMinutes === 0) {
-                    this.elements.remainingText.textContent = '퇴근 가능합니다!';
+                    newText = '퇴근 가능합니다!';
                 } else {
-                    this.elements.remainingText.textContent = `퇴근 완료! (${overtimeMinutes}분 초과)`;
+                    newText = `퇴근 완료! (${overtimeMinutes}분 초과)`;
                 }
             } else {
-                // 퇴근 완료 후 10분 초과 - 빨간색 (늦은 퇴근)
-                this.elements.remainingTime.className = 'remaining-time urgent';
+                // 퇴근 완료 후 30분 초과 - 빨간색 (늦은 퇴근)
+                newClassName = 'remaining-time urgent';
                 if (overtimeHours > 0) {
-                    this.elements.remainingText.textContent = `퇴근 ${overtimeHours}시간 ${overtimeMinutes}분 초과!`;
+                    newText = `퇴근 ${overtimeHours}시간 ${overtimeMinutes}분 초과!`;
                 } else {
-                    this.elements.remainingText.textContent = `퇴근 ${overtimeMinutes}분 초과!`;
+                    newText = `퇴근 ${overtimeMinutes}분 초과!`;
                 }
             }
         } else {
@@ -291,21 +304,30 @@ class WorkTimeManager {
             const remainingHours = Math.floor(remaining / (1000 * 60 * 60));
             const remainingMinutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
             
-            this.elements.remainingTime.style.display = 'block';
-            
             if (remainingHours === 0 && remainingMinutes <= 30) {
                 // 30분 이하 남음 - 초록색 (칼퇴 준비!)
-                this.elements.remainingTime.className = 'remaining-time complete';
-                this.elements.remainingText.textContent = `퇴근까지 ${remainingMinutes}분 남음`;
+                newClassName = 'remaining-time complete';
+                newText = `퇴근까지 ${remainingMinutes}분 남음`;
             } else {
                 // 일반 표시 - 회색
-                this.elements.remainingTime.className = 'remaining-time';
+                newClassName = 'remaining-time';
                 if (remainingHours > 0) {
-                    this.elements.remainingText.textContent = `퇴근까지 ${remainingHours}시간 ${remainingMinutes}분 남음`;
+                    newText = `퇴근까지 ${remainingHours}시간 ${remainingMinutes}분 남음`;
                 } else {
-                    this.elements.remainingText.textContent = `퇴근까지 ${remainingMinutes}분 남음`;
+                    newText = `퇴근까지 ${remainingMinutes}분 남음`;
                 }
             }
+        }
+        
+        // 값이 변경된 경우에만 DOM 업데이트
+        if (this.elements.remainingTime.style.display !== 'block') {
+            this.elements.remainingTime.style.display = 'block';
+        }
+        if (this.elements.remainingTime.className !== newClassName) {
+            this.elements.remainingTime.className = newClassName;
+        }
+        if (this.elements.remainingText.textContent !== newText) {
+            this.elements.remainingText.textContent = newText;
         }
     }
     
@@ -345,12 +367,22 @@ class WorkTimeManager {
                 endTime: data.endTime ? new Date(data.endTime) : null
             };
             
-            // 오늘 날짜가 아니면 데이터 초기화
+            // 오늘 날짜가 아니면 데이터 초기화 (단, 퇴근 완료된 데이터는 유지)
             const today = new Date().toDateString();
             const startDate = this.workData.startTime ? this.workData.startTime.toDateString() : null;
             
             if (startDate && startDate !== today) {
-                this.resetData();
+                // 퇴근이 완료된 경우 근무 요약은 유지
+                if (this.workData.endTime) {
+                    this.workData.isWorking = false;
+                    this.workData.startTime = null; // 출근시간만 초기화
+                    this.workData.leaveHours = 0;
+                    this.saveWorkData();
+                    this.restoreUIState();
+                } else {
+                    // 퇴근하지 않은 경우 완전 초기화
+                    this.resetData();
+                }
             } else {
                 // 저장된 데이터가 있으면 UI 상태 복원
                 this.restoreUIState();
@@ -456,10 +488,16 @@ class WorkTimeManager {
             this.elements.workBtn.style.opacity = '0.5';
             this.elements.workBtn.style.cursor = 'not-allowed';
             
-            // 남은 시간 계산
+            // 남은 시간 계산 (수정됨)
             const remainingHours = totalRequiredHours - elapsedHours;
-            const remainingMinutes = Math.ceil(remainingHours * 60);
-            this.elements.workBtn.textContent = `퇴근까지 ${Math.floor(remainingMinutes / 60)}시간 ${remainingMinutes % 60}분`;
+            const remainingHoursInt = Math.floor(remainingHours);
+            const remainingMinutesInt = Math.floor((remainingHours - remainingHoursInt) * 60);
+            
+            if (remainingHoursInt > 0) {
+                this.elements.workBtn.textContent = `퇴근까지 ${remainingHoursInt}시간 ${remainingMinutesInt}분`;
+            } else {
+                this.elements.workBtn.textContent = `퇴근까지 ${remainingMinutesInt}분`;
+            }
         }
     }
 
@@ -495,7 +533,15 @@ class WorkTimeManager {
         
         // 출근시간 수정
         const newStartTime = new Date(this.workData.startTime);
+        const originalDate = newStartTime.toDateString();
         newStartTime.setHours(hour, minute, 0, 0);
+        
+        // 날짜가 변경되는 경우 확인
+        if (newStartTime.toDateString() !== originalDate) {
+            if (!confirm('출근시간을 수정하면 날짜가 변경됩니다. 계속하시겠습니까?')) {
+                return;
+            }
+        }
         
         this.workData.startTime = newStartTime;
         
@@ -528,13 +574,24 @@ class WorkTimeManager {
         this.elements.summaryWorkType.textContent = workType;
         
         // 메시지 설정
-        const requiredHours = this.workData.leaveHours === 4 ? 4 : 8;
-        const actualHours = totalHours + (totalMinutes / 60);
-        
-        if (actualHours >= requiredHours) {
-            this.elements.summaryMessage.textContent = '오늘도 수고하셨습니다! 🎉';
+        let requiredHours;
+        if (this.workData.leaveHours === 4) {
+            requiredHours = 4; // 반차: 4시간 (휴게시간 없음)
+        } else if (this.workData.leaveHours === 2) {
+            requiredHours = 7; // 반반차: 6시간 근무 + 1시간 휴게
         } else {
-            this.elements.summaryMessage.textContent = '조금 더 힘내세요! 💪';
+            requiredHours = 9; // 정상근무: 8시간 근무 + 1시간 휴게
+        }
+        
+        const actualHours = totalHours + (totalMinutes / 60);
+        const overtimeHours = actualHours - requiredHours;
+        
+        if (overtimeHours > 0.5) { // 30분(0.5시간) 초과 시에만 야근으로 판정
+            // 야근했음
+            this.elements.summaryMessage.textContent = '내일은 칼퇴하세요! 💪';
+        } else {
+            // 정시 퇴근 또는 30분 이하 초과
+            this.elements.summaryMessage.textContent = '오늘도 수고하셨습니다! 🎉';
         }
         
         this.elements.workSummary.style.display = 'block';
