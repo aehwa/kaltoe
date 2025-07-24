@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>근무시간 관리</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>근무시간 관리</h1>
+            <div class="date-display" id="currentDate"></div>
+        </header>
+
+        <main>
+            <div class="status-card">
+                <div class="status-indicator" id="statusIndicator">
+                    <span id="statusText">출근 전</span>
+                </div>
+                
+                <button class="action-btn" id="workBtn">
+                    출근하기
+                </button>
+            </div>
+
+            <div class="time-info" id="timeInfo" style="display: none;">
+                <div class="time-card">
+                    <h3>출근 시간</h3>
+                    <div class="time-display" id="startTime">--:--</div>
+                </div>
+                
+                <div class="time-card">
+                    <h3>경과 시간</h3>
+                    <div class="time-display" id="elapsedTime">00:00:00</div>
+                </div>
+                
+                <div class="time-card">
+                    <h3>예상 퇴근 시간</h3>
+                    <div class="time-display" id="endTime">--:--</div>
+                </div>
+            </div>
+
+            <div class="leave-options" id="leaveOptions" style="display: none;">
+                <h3>휴가 옵션</h3>
+                <div class="leave-buttons">
+                    <button class="leave-btn" data-hours="0">정상근무</button>
+                    <button class="leave-btn" data-hours="2">반반차 (2시간)</button>
+                    <button class="leave-btn" data-hours="4">반차 (4시간)</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 

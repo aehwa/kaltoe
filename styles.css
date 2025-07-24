@@ -1,0 +1,182 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: #333;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    color: white;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.date-display {
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+main {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.status-card {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 15px;
+}
+
+.status-indicator {
+    margin-bottom: 20px;
+    padding: 15px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.status-indicator.off-duty {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.status-indicator.on-duty {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.action-btn {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.1rem;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+.action-btn:active {
+    transform: translateY(0);
+}
+
+.time-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.time-card {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    border-left: 4px solid #667eea;
+}
+
+.time-card h3 {
+    margin-bottom: 10px;
+    color: #555;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.time-display {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+    font-family: 'Courier New', monospace;
+}
+
+.leave-options {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 15px;
+}
+
+.leave-options h3 {
+    margin-bottom: 15px;
+    color: #555;
+    text-align: center;
+}
+
+.leave-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.leave-btn {
+    background: #e3f2fd;
+    color: #1976d2;
+    border: 2px solid #1976d2;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.leave-btn:hover {
+    background: #1976d2;
+    color: white;
+}
+
+.leave-btn.active {
+    background: #1976d2;
+    color: white;
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 10px;
+    }
+    
+    main {
+        padding: 20px;
+    }
+    
+    .time-info {
+        grid-template-columns: 1fr;
+    }
+    
+    .leave-buttons {
+        flex-direction: column;
+    }
+    
+    .leave-btn {
+        width: 100%;
+    }
+} 
