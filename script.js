@@ -35,24 +35,36 @@ class WorkTimeManager {
             summaryWorkType: document.getElementById('summaryWorkType'),
             summaryOvertime: document.getElementById('summaryOvertime'),
             summaryMessage: document.getElementById('summaryMessage'),
-            historyList: document.getElementById('historyList'),
-            historyListBeforeWork: document.getElementById('historyListBeforeWork') // 출근 전 이력 리스트
+            historyListBeforeWork: document.getElementById('historyListBeforeWork')
         };
         
         this.elapsedTimer = null;
+        this.dateTimer = null; // 날짜 업데이트 타이머 추가
         this.init();
     }
     
     init() {
         this.updateCurrentDate();
         this.loadWorkData();
-        this.loadWorkHistory(); // 근무 이력 로드 추가
+        this.loadWorkHistory();
         this.setupEventListeners();
         this.updateDisplay();
         this.startElapsedTimer();
         
         // 1초마다 현재 날짜 업데이트
-        setInterval(() => this.updateCurrentDate(), 1000);
+        this.dateTimer = setInterval(() => this.updateCurrentDate(), 1000);
+    }
+    
+    // 앱 정리 메서드 추가
+    destroy() {
+        if (this.elapsedTimer) {
+            clearInterval(this.elapsedTimer);
+            this.elapsedTimer = null;
+        }
+        if (this.dateTimer) {
+            clearInterval(this.dateTimer);
+            this.dateTimer = null;
+        }
     }
     
     updateCurrentDate() {
@@ -130,12 +142,7 @@ class WorkTimeManager {
             this.elements.workSummary.style.display = 'none';
             
             // 휴가 옵션 버튼 상태 복원
-            document.querySelectorAll('.leave-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (parseInt(btn.dataset.hours) === (this.workData.leaveHours || 0)) {
-                    btn.classList.add('active');
-                }
-            });
+            this.updateLeaveButtonStates(this.workData.leaveHours || 0);
             
             this.saveWorkData();
             this.updateDisplay();
@@ -157,12 +164,7 @@ class WorkTimeManager {
         this.elements.workSummary.style.display = 'none';
         
         // 정상근무 버튼을 기본으로 활성화
-        document.querySelectorAll('.leave-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if (parseInt(btn.dataset.hours) === 0) {
-                btn.classList.add('active');
-            }
-        });
+        this.updateLeaveButtonStates(0);
         
         this.saveWorkData();
         this.updateDisplay();
@@ -202,16 +204,21 @@ class WorkTimeManager {
         this.workData.leaveHours = hours;
         
         // 버튼 활성화 상태 업데이트
-        document.querySelectorAll('.leave-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if (parseInt(btn.dataset.hours) === hours) {
-                btn.classList.add('active');
-            }
-        });
+        this.updateLeaveButtonStates(hours);
         
         this.saveWorkData();
         this.updateDisplay();
         this.updateWorkButtonState();
+    }
+    
+    // 휴가 버튼 상태 업데이트를 별도 메서드로 분리
+    updateLeaveButtonStates(activeHours) {
+        document.querySelectorAll('.leave-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (parseInt(btn.dataset.hours) === activeHours) {
+                btn.classList.add('active');
+            }
+        });
     }
     
     updateDisplay() {
@@ -262,7 +269,7 @@ class WorkTimeManager {
             const workType = this.getWorkTypeText(record.leaveHours);
             
             // 초과시간 계산
-            const requiredHours = this.calculateRequiredHoursForRecord(record.leaveHours);
+            const requiredHours = this.calculateRequiredHours(record.leaveHours);
             const overtimeHours = Math.max(0, record.totalHours - requiredHours);
             const overtimeHoursInt = Math.floor(overtimeHours);
             const overtimeMinutesInt = Math.floor((overtimeHours - overtimeHoursInt) * 60);
@@ -305,11 +312,9 @@ class WorkTimeManager {
         if (this.elements.elapsedTime.textContent !== newTimeString) {
             this.elements.elapsedTime.textContent = newTimeString;
             
-            // 경과 시간이 업데이트될 때마다 퇴근 버튼 상태와 남은 시간 확인
+            // 경과 시간이 업데이트될 때마다 퇴근 버튼 상태 확인
             if (this.workData.isWorking) {
                 this.updateWorkButtonState();
-                // 예상 퇴근시간 다시 계산하여 남은 시간 업데이트
-                this.updateEndTime();
             }
         }
     }
@@ -317,7 +322,7 @@ class WorkTimeManager {
     updateEndTime() {
         if (!this.workData.startTime) return;
         
-        const { totalRequiredHours } = this.calculateRequiredHours();
+        const totalRequiredHours = this.calculateRequiredHours(this.workData.leaveHours);
         const endTime = new Date(this.workData.startTime);
         endTime.setHours(endTime.getHours() + totalRequiredHours);
         
@@ -340,7 +345,6 @@ class WorkTimeManager {
         
         let newText = '';
         let newClassName = '';
-        let shouldShow = true;
         
         if (remaining <= 0) {
             // 퇴근 시간이 지남 - 초과 시간 계산
@@ -604,13 +608,8 @@ class WorkTimeManager {
             this.elements.leaveOptions.style.display = 'block';
             this.elements.workSummary.style.display = 'none';
             
-            // 휴가 옵션 버튼 상태 복원 (기본값: 정상근무)
-            document.querySelectorAll('.leave-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (parseInt(btn.dataset.hours) === (this.workData.leaveHours || 0)) {
-                    btn.classList.add('active');
-                }
-            });
+            // 휴가 옵션 버튼 상태 복원
+            this.updateLeaveButtonStates(this.workData.leaveHours || 0);
             
             // 퇴근 버튼 상태 업데이트
             this.updateWorkButtonState();
@@ -666,7 +665,7 @@ class WorkTimeManager {
         const elapsed = now - this.workData.startTime;
         const elapsedHours = elapsed / (1000 * 60 * 60);
         
-        const { totalRequiredHours } = this.calculateRequiredHours();
+        const totalRequiredHours = this.calculateRequiredHours(this.workData.leaveHours);
         
         if (elapsedHours >= totalRequiredHours) {
             // 근무시간 충족 - 퇴근 버튼 활성화
@@ -680,7 +679,7 @@ class WorkTimeManager {
             this.elements.workBtn.style.opacity = '0.5';
             this.elements.workBtn.style.cursor = 'not-allowed';
             
-            // 남은 시간 계산 (수정됨)
+            // 남은 시간 계산
             const remainingHours = totalRequiredHours - elapsedHours;
             const remainingHoursInt = Math.floor(remainingHours);
             const remainingMinutesInt = Math.floor((remainingHours - remainingHoursInt) * 60);
@@ -765,7 +764,7 @@ class WorkTimeManager {
         this.elements.summaryWorkType.textContent = this.getWorkTypeTextForSummary(this.workData.leaveHours);
         
         // 초과근무 시간 계산 및 표시
-        const { totalRequiredHours } = this.calculateRequiredHours();
+        const totalRequiredHours = this.calculateRequiredHours(this.workData.leaveHours);
         const actualHours = totalHours + (totalMinutes / 60);
         const overtimeHours = actualHours - totalRequiredHours;
         
@@ -788,69 +787,8 @@ class WorkTimeManager {
         this.elements.workSummary.style.display = 'block';
     }
     
-    showWorkHistoryInUI() {
-        const history = this.getWorkHistory();
-        const historyList = this.elements.historyList;
-        
-        // 기존 내용 초기화
-        historyList.innerHTML = '';
-        
-        if (Object.keys(history).length === 0) {
-            historyList.innerHTML = '<div class="no-history">저장된 근무 기록이 없습니다.</div>';
-            return;
-        }
-        
-        // 최근 7일간의 기록만 표시 (최신순)
-        const sortedDates = Object.keys(history).sort().reverse().slice(0, 7);
-        
-        sortedDates.forEach(dateKey => {
-            const record = history[dateKey];
-            const startTime = this.formatTime(record.startTime);
-            const endTime = this.formatTime(record.endTime);
-            const totalHours = Math.floor(record.totalHours);
-            const totalMinutes = Math.floor((record.totalHours - totalHours) * 60);
-            
-            const workType = this.getWorkTypeText(record.leaveHours);
-            
-            // 날짜 포맷팅 (월/일)
-            const date = new Date(dateKey);
-            const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
-            
-            const historyItem = document.createElement('div');
-            historyItem.className = 'history-item';
-            historyItem.innerHTML = `
-                <div class="history-date">${formattedDate}</div>
-                <div class="history-time">${startTime} ~ ${endTime}</div>
-                <div class="history-duration">${totalHours}h ${totalMinutes}m</div>
-                <div class="history-type">${workType}</div>
-            `;
-            
-            historyList.appendChild(historyItem);
-        });
-    }
-    
-    // 공통 유틸리티 함수들
-    calculateRequiredHours() {
-        let workHours, breakHours;
-        
-        if (this.workData.leaveHours === 4) {
-            // 반차: 휴게시간 없이 4시간만 근무
-            workHours = 4;
-            breakHours = 0;
-        } else {
-            // 정상근무 또는 반반차: 휴게시간 포함
-            workHours = 8 - this.workData.leaveHours;
-            breakHours = 1;
-        }
-        
-        return {
-            workHours,
-            breakHours,
-            totalRequiredHours: workHours + breakHours
-        };
-    }
-    
-    calculateRequiredHoursForRecord(leaveHours) {
+    // 공통 유틸리티 함수들 - 중복 제거
+    calculateRequiredHours(leaveHours) {
         let workHours, breakHours;
         
         if (leaveHours === 4) {
