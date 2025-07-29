@@ -3,6 +3,7 @@ class WorkTimeManager {
         this.workData = {
             startTime: null,
             endTime: null,
+            calculatedEndTime: null, // 계산된 퇴근 시간을 저장
             leaveHours: 0,
             isWorking: false
         };
@@ -40,10 +41,17 @@ class WorkTimeManager {
         
         this.elapsedTimer = null;
         this.dateTimer = null; // 날짜 업데이트 타이머 추가
+        this.lastDateString = null; // 날짜 변경 감지를 위한 변수 추가
         this.init();
     }
     
     init() {
+        // DOM 요소들이 모두 존재하는지 확인
+        if (!this.validateElements()) {
+            console.error('필수 DOM 요소를 찾을 수 없습니다.');
+            return;
+        }
+        
         this.updateCurrentDate();
         this.loadWorkData();
         this.loadWorkHistory();
@@ -53,6 +61,23 @@ class WorkTimeManager {
         
         // 1초마다 현재 날짜 업데이트
         this.dateTimer = setInterval(() => this.updateCurrentDate(), 1000);
+    }
+    
+    // DOM 요소 검증 메서드 추가
+    validateElements() {
+        const requiredElements = [
+            'currentDate', 'statusIndicator', 'statusText', 'workBtn',
+            'timeInfo', 'startTime', 'elapsedTime', 'endTime',
+            'leaveOptions', 'remainingTime', 'remainingText'
+        ];
+        
+        for (const elementId of requiredElements) {
+            if (!this.elements[elementId]) {
+                console.error(`필수 요소를 찾을 수 없습니다: ${elementId}`);
+                return false;
+            }
+        }
+        return true;
     }
     
     // 앱 정리 메서드 추가
@@ -65,6 +90,15 @@ class WorkTimeManager {
             clearInterval(this.dateTimer);
             this.dateTimer = null;
         }
+        // 이벤트 리스너 정리
+        this.removeEventListeners();
+    }
+    
+    // 이벤트 리스너 정리 메서드 추가
+    removeEventListeners() {
+        // workBtn 이벤트 리스너는 별도로 관리하지 않으므로 생략
+        // 휴가 옵션 버튼들의 이벤트 리스너는 동적으로 추가되므로 별도 정리 불필요
+        // 모달 관련 이벤트 리스너들도 동적으로 추가되므로 별도 정리 불필요
     }
     
     updateCurrentDate() {
@@ -79,6 +113,16 @@ class WorkTimeManager {
             second: '2-digit'
         };
         const newDateString = now.toLocaleDateString('ko-KR', options);
+        
+        // 날짜가 변경되었는지 확인 (자정 처리)
+        const currentDateString = now.toDateString();
+        if (this.lastDateString && this.lastDateString !== currentDateString) {
+            // 날짜가 변경되었으면 calculatedEndTime 재계산
+            if (this.workData.isWorking && this.workData.startTime) {
+                this.updateEndTime();
+            }
+        }
+        this.lastDateString = currentDateString;
         
         // 값이 변경된 경우에만 DOM 업데이트
         if (this.elements.currentDate.textContent !== newDateString) {
@@ -144,6 +188,9 @@ class WorkTimeManager {
             // 휴가 옵션 버튼 상태 복원
             this.updateLeaveButtonStates(this.workData.leaveHours || 0);
             
+            // 타이머 시작
+            this.startElapsedTimer();
+            
             this.saveWorkData();
             this.updateDisplay();
             this.updateWorkButtonState();
@@ -165,6 +212,9 @@ class WorkTimeManager {
         
         // 정상근무 버튼을 기본으로 활성화
         this.updateLeaveButtonStates(0);
+        
+        // 타이머 시작
+        this.startElapsedTimer();
         
         this.saveWorkData();
         this.updateDisplay();
@@ -322,14 +372,21 @@ class WorkTimeManager {
     updateEndTime() {
         if (!this.workData.startTime) return;
         
-        const totalRequiredHours = this.calculateRequiredHours(this.workData.leaveHours);
-        const endTime = new Date(this.workData.startTime);
-        endTime.setHours(endTime.getHours() + totalRequiredHours);
-        
-        this.elements.endTime.textContent = this.formatTime(endTime);
-        
-        // 남은 시간 계산 및 표시
-        this.updateRemainingTime(endTime);
+        try {
+            const totalRequiredHours = this.calculateRequiredHours(this.workData.leaveHours);
+            const endTime = new Date(this.workData.startTime);
+            endTime.setHours(endTime.getHours() + totalRequiredHours);
+            
+            // 계산된 퇴근 시간을 저장
+            this.workData.calculatedEndTime = endTime;
+            
+            this.elements.endTime.textContent = this.formatTime(endTime);
+            
+            // 남은 시간 계산 및 표시
+            this.updateRemainingTime(endTime);
+        } catch (error) {
+            console.error('퇴근 시간 계산 중 오류:', error);
+        }
     }
     
     updateRemainingTime(endTime) {
@@ -402,9 +459,22 @@ class WorkTimeManager {
     }
     
     startElapsedTimer() {
+        // 기존 타이머가 있다면 정리
+        if (this.elapsedTimer) {
+            clearInterval(this.elapsedTimer);
+        }
+        
         this.elapsedTimer = setInterval(() => {
-            if (this.workData.isWorking) {
-                this.updateElapsedTime();
+            try {
+                if (this.workData.isWorking) {
+                    this.updateElapsedTime();
+                    // 남은 시간도 실시간으로 업데이트 (저장된 calculatedEndTime 사용)
+                    if (this.workData.calculatedEndTime) {
+                        this.updateRemainingTime(this.workData.calculatedEndTime);
+                    }
+                }
+            } catch (error) {
+                console.error('타이머 업데이트 중 오류:', error);
             }
         }, 1000);
     }
@@ -422,7 +492,8 @@ class WorkTimeManager {
             const dataToSave = {
                 ...this.workData,
                 startTime: this.workData.startTime ? this.workData.startTime.toISOString() : null,
-                endTime: this.workData.endTime ? this.workData.endTime.toISOString() : null
+                endTime: this.workData.endTime ? this.workData.endTime.toISOString() : null,
+                calculatedEndTime: this.workData.calculatedEndTime ? this.workData.calculatedEndTime.toISOString() : null
             };
             
             localStorage.setItem('workTimeData', JSON.stringify(dataToSave));
@@ -558,10 +629,18 @@ class WorkTimeManager {
             try {
                 const data = JSON.parse(savedData);
                 
+                // 데이터 무결성 검증
+                if (!this.validateWorkData(data)) {
+                    console.warn('저장된 데이터가 유효하지 않습니다. 초기화합니다.');
+                    this.resetData();
+                    return;
+                }
+                
                 this.workData = {
                     ...data,
                     startTime: data.startTime ? new Date(data.startTime) : null,
-                    endTime: data.endTime ? new Date(data.endTime) : null
+                    endTime: data.endTime ? new Date(data.endTime) : null,
+                    calculatedEndTime: data.calculatedEndTime ? new Date(data.calculatedEndTime) : null
                 };
                 
                 // 오늘 날짜가 아니면 데이터 초기화
@@ -596,6 +675,29 @@ class WorkTimeManager {
                 this.showWorkSummary();
             }
         }
+    }
+    
+    // 데이터 무결성 검증 메서드 추가
+    validateWorkData(data) {
+        // 필수 필드 존재 확인
+        const requiredFields = ['startTime', 'endTime', 'leaveHours', 'isWorking'];
+        for (const field of requiredFields) {
+            if (!(field in data)) {
+                return false;
+            }
+        }
+        
+        // leaveHours가 유효한 값인지 확인
+        if (typeof data.leaveHours !== 'number' || data.leaveHours < 0 || data.leaveHours > 4) {
+            return false;
+        }
+        
+        // isWorking이 boolean인지 확인
+        if (typeof data.isWorking !== 'boolean') {
+            return false;
+        }
+        
+        return true;
     }
     
     restoreUIState() {
@@ -652,6 +754,7 @@ class WorkTimeManager {
         this.workData = {
             startTime: null,
             endTime: null,
+            calculatedEndTime: null,
             leaveHours: 0,
             isWorking: false
         };
@@ -853,6 +956,15 @@ class WorkTimeAPI {
 }
 
 // 앱 초기화
+let workTimeManager = null;
+
 document.addEventListener('DOMContentLoaded', () => {
-    new WorkTimeManager();
+    workTimeManager = new WorkTimeManager();
+});
+
+// 페이지 언로드 시 정리 작업
+window.addEventListener('beforeunload', () => {
+    if (workTimeManager) {
+        workTimeManager.destroy();
+    }
 }); 
