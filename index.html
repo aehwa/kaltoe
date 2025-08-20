@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="근무시간을 효율적으로 관리하는 웹 애플리케이션">
+    <meta name="keywords" content="근무시간, 출퇴근, 근무관리, 근무기록">
+    <meta name="author" content="근무시간 관리 시스템">
+    <meta name="robots" content="index, follow">
     <title>근무시간 관리</title>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -19,7 +23,7 @@
                     <span id="statusText">출근 전</span>
                 </div>
                 
-                <button class="action-btn" id="workBtn">
+                <button class="action-btn" id="workBtn" aria-label="출근하기" role="button">
                     출근하기
                 </button>
             </div>
@@ -29,7 +33,7 @@
                     <div class="time-card">
                         <h3>출근 시간</h3>
                         <div class="time-display" id="startTime">--:--</div>
-                        <button class="edit-btn" id="editStartTimeBtn">수정</button>
+                        <button class="edit-btn" id="editStartTimeBtn" aria-label="출근시간 수정" role="button">수정</button>
                     </div>
                     
                     <div class="time-card">
@@ -53,17 +57,17 @@
                     <h3>출근시간 수정</h3>
                     <div class="time-input-group">
                         <div class="time-input-item">
-                            <input type="number" id="editHour" min="0" max="23" value="9">
-                            <span class="time-unit">시</span>
-                        </div>
-                        <div class="time-input-item">
-                            <input type="number" id="editMinute" min="0" max="59" value="0">
-                            <span class="time-unit">분</span>
+                                                    <input type="number" id="editHour" min="0" max="23" value="9" aria-label="출근 시간 (시)">
+                        <span class="time-unit">시</span>
+                    </div>
+                    <div class="time-input-item">
+                        <input type="number" id="editMinute" min="0" max="59" value="0" aria-label="출근 시간 (분)">
+                        <span class="time-unit">분</span>
                         </div>
                     </div>
                     <div class="modal-buttons">
-                        <button class="modal-btn cancel-btn" id="cancelEditBtn">취소</button>
-                        <button class="modal-btn confirm-btn" id="confirmEditBtn">확인</button>
+                        <button class="modal-btn cancel-btn" id="cancelEditBtn" aria-label="수정 취소" role="button">취소</button>
+                        <button class="modal-btn confirm-btn" id="confirmEditBtn" aria-label="수정 확인" role="button">확인</button>
                     </div>
                 </div>
             </div>
@@ -71,9 +75,9 @@
             <div class="leave-options" id="leaveOptions" style="display: none;">
                 <h3>휴가 옵션</h3>
                 <div class="leave-buttons">
-                    <button class="leave-btn" data-hours="0">정상근무</button>
-                    <button class="leave-btn" data-hours="2">반반차 (2시간)</button>
-                    <button class="leave-btn" data-hours="4">반차 (4시간)</button>
+                    <button class="leave-btn" data-hours="0" aria-label="정상근무 선택" role="button">정상근무</button>
+                    <button class="leave-btn" data-hours="2" aria-label="반반차 2시간 선택" role="button">반반차 (2시간)</button>
+                    <button class="leave-btn" data-hours="4" aria-label="반차 4시간 선택" role="button">반차 (4시간)</button>
                 </div>
             </div>
 
@@ -110,11 +114,11 @@
             <div class="history-section-before-work" id="historyBeforeWork">
                 <h3>최근 근무 기록 (최대 30일)</h3>
                 <div class="history-header">
-                    <div class="history-date">날짜</div>
-                    <div class="history-time">근무시간</div>
-                    <div class="history-duration">총시간</div>
-                    <div class="history-type">근무형태</div>
-                    <div class="history-overtime">초과시간</div>
+                    <div class="history-header-item history-date">날짜</div>
+                    <div class="history-header-item history-time">근무시간</div>
+                    <div class="history-header-item history-duration">총시간</div>
+                    <div class="history-header-item history-type">근무형태</div>
+                    <div class="history-header-item history-overtime">초과시간</div>
                 </div>
                 <div class="history-list" id="historyListBeforeWork">
                     <!-- 이전 근무 기록이 여기에 표시됩니다 -->

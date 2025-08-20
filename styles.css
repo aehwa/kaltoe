@@ -129,9 +129,10 @@ main {
 
 .remaining-time {
     font-size: 0.9rem;
-    color: #666;
+    color: #555;
     margin-top: 5px;
     text-align: center;
+    font-weight: 500;
 }
 
 .remaining-time.urgent {
@@ -402,10 +403,17 @@ main {
     box-sizing: border-box;
 }
 
-.history-header .history-date {
-    font-weight: bold;
+.history-header-item {
     min-width: 80px;
     flex-shrink: 0;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.history-header .history-date {
+    font-weight: bold;
 }
 
 .history-header .history-time {
@@ -416,32 +424,18 @@ main {
 
 .history-header .history-duration {
     text-align: right;
-    min-width: 80px;
-    flex-shrink: 0;
 }
 
 .history-header .history-type {
     background: rgba(255, 255, 255, 0.2);
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.8rem;
     margin-left: 8px;
-    min-width: 80px;
-    flex-shrink: 0;
-    text-align: center;
 }
 
 .history-header .history-overtime {
     background: rgba(255, 193, 7, 0.3);
     color: #ff9800;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.8rem;
     margin-left: 8px;
     font-weight: bold;
-    min-width: 80px;
-    flex-shrink: 0;
-    text-align: center;
 }
 
 .history-list {
@@ -518,9 +512,10 @@ main {
 
 .no-history {
     text-align: center;
-    opacity: 0.7;
+    opacity: 0.8;
     font-style: italic;
     padding: 20px;
+    color: #555;
 }
 
 @media (max-width: 600px) {

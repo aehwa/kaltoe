@@ -357,24 +357,28 @@ class WorkTimeManager {
     }
     
     updateElapsedTime() {
-        if (!this.workData.startTime) return;
-        
-        const now = new Date();
-        const elapsed = now - this.workData.startTime;
-        const hours = Math.floor(elapsed / (1000 * 60 * 60));
-        const minutes = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((elapsed % (1000 * 60)) / 1000);
-        
-        const newTimeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        
-        // 값이 변경된 경우에만 DOM 업데이트
-        if (this.elements.elapsedTime.textContent !== newTimeString) {
-            this.elements.elapsedTime.textContent = newTimeString;
+        try {
+            if (!this.workData.startTime) return;
             
-            // 경과 시간이 업데이트될 때마다 퇴근 버튼 상태 확인
-            if (this.workData.isWorking) {
-                this.updateWorkButtonState();
+            const now = new Date();
+            const elapsed = now - this.workData.startTime;
+            const hours = Math.floor(elapsed / (1000 * 60 * 60));
+            const minutes = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((elapsed % (1000 * 60)) / 1000);
+            
+            const newTimeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // 값이 변경된 경우에만 DOM 업데이트
+            if (this.elements.elapsedTime.textContent !== newTimeString) {
+                this.elements.elapsedTime.textContent = newTimeString;
+                
+                // 경과 시간이 업데이트될 때마다 퇴근 버튼 상태 확인
+                if (this.workData.isWorking) {
+                    this.updateWorkButtonState();
+                }
             }
+        } catch (error) {
+            console.error('경과 시간 업데이트 중 오류:', error);
         }
     }
     
