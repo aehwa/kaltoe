@@ -308,8 +308,14 @@ class WorkTimeManager {
             historyList.innerHTML = '<div class="no-history">저장된 근무 기록이 없습니다.</div>';
             return;
         }
-        // 최근 30일간의 기록만 표시 (최신순)
-        const sortedDates = Object.keys(history).sort().reverse().slice(0, 30);
+        
+        // 날짜 기반 정렬 수정: Date 객체로 변환하여 정확한 날짜 순서로 정렬
+        const sortedDates = Object.keys(history).sort((a, b) => {
+            const dateA = new Date(a);
+            const dateB = new Date(b);
+            return dateB - dateA; // 최신 날짜가 먼저 오도록 내림차순 정렬
+        }).slice(0, 30);
+        
         sortedDates.forEach(dateKey => {
             const record = history[dateKey];
             const startTime = this.formatTime(record.startTime);
