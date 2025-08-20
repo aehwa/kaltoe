@@ -169,6 +169,8 @@ class WorkTimeManager {
         }
     }
     
+
+    
     startWork() {
         // 오늘 이미 출근한 기록이 있는지 확인
         const today = new Date().toDateString();
@@ -277,6 +279,7 @@ class WorkTimeManager {
             this.updateElapsedTime();
             this.updateEndTime();
         }
+        
         // 출근 상태에 따라 이력 표시 제어 (DOM이 로드된 후에만)
         setTimeout(() => this.updateHistorySectionVisibility(), 0);
     }

@@ -25,22 +25,24 @@
             </div>
 
             <div class="time-info" id="timeInfo" style="display: none;">
-                <div class="time-card">
-                    <h3>출근 시간</h3>
-                    <div class="time-display" id="startTime">--:--</div>
-                    <button class="edit-btn" id="editStartTimeBtn">수정</button>
-                </div>
-                
-                <div class="time-card">
-                    <h3>경과 시간</h3>
-                    <div class="time-display" id="elapsedTime">00:00:00</div>
-                </div>
-                
-                <div class="time-card">
-                    <h3>예상 퇴근 시간</h3>
-                    <div class="time-display" id="endTime">--:--</div>
-                    <div class="remaining-time" id="remainingTime" style="display: none;">
-                        <span id="remainingText">퇴근까지 남은 시간</span>
+                <div class="time-cards-container">
+                    <div class="time-card">
+                        <h3>출근 시간</h3>
+                        <div class="time-display" id="startTime">--:--</div>
+                        <button class="edit-btn" id="editStartTimeBtn">수정</button>
+                    </div>
+                    
+                    <div class="time-card">
+                        <h3>경과 시간</h3>
+                        <div class="time-display" id="elapsedTime">00:00:00</div>
+                    </div>
+                    
+                    <div class="time-card">
+                        <h3>예상 퇴근 시간</h3>
+                        <div class="time-display" id="endTime">--:--</div>
+                        <div class="remaining-time" id="remainingTime" style="display: none;">
+                            <span id="remainingText">퇴근까지 남은 시간</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -78,7 +80,7 @@
             <!-- 오늘 근무 요약 -->
             <div class="work-summary" id="workSummary" style="display: none;">
                 <h3>오늘 근무 완료!</h3>
-                <div class="summary-content">
+                <div class="summary-content" id="summaryContent">
                     <div class="summary-item">
                         <span class="summary-label">출근 시간:</span>
                         <span class="summary-value" id="summaryStartTime">--:--</span>

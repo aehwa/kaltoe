@@ -14,7 +14,7 @@ body {
 .container {
     max-width: 800px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 15px;
 }
 
 header {
@@ -37,24 +37,28 @@ header h1 {
 main {
     background: white;
     border-radius: 20px;
-    padding: 30px;
+    padding: 25px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
 
 .status-card {
-    text-align: center;
-    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 25px;
     padding: 20px;
     background: #f8f9fa;
     border-radius: 15px;
+    gap: 15px;
 }
 
 .status-indicator {
-    margin-bottom: 20px;
+    flex: 1;
     padding: 15px;
     border-radius: 10px;
     font-weight: bold;
     font-size: 1.1rem;
+    text-align: center;
 }
 
 .status-indicator.off-duty {
@@ -89,10 +93,13 @@ main {
 }
 
 .time-info {
+    margin-bottom: 25px;
+}
+
+.time-cards-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
 }
 
 .time-card {
@@ -258,7 +265,7 @@ main {
 }
 
 .leave-options {
-    margin-bottom: 30px;
+    margin-bottom: 25px;
     padding: 20px;
     background: #f8f9fa;
     border-radius: 15px;
@@ -272,7 +279,7 @@ main {
 
 .leave-buttons {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     justify-content: center;
     flex-wrap: wrap;
 }
@@ -286,6 +293,7 @@ main {
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 0.9rem;
+    min-width: 120px;
 }
 
 .leave-btn:hover {
@@ -302,10 +310,10 @@ main {
 .work-summary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 30px;
+    padding: 25px;
     border-radius: 15px;
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 25px;
 }
 
 .work-summary h3 {
@@ -316,8 +324,8 @@ main {
 
 .summary-content {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
     margin-bottom: 25px;
 }
 
@@ -364,7 +372,7 @@ main {
 
 /* 출근 전 이력 표시 스타일 */
 .history-section-before-work {
-    margin-top: 30px;
+    margin-top: 25px;
     padding: 20px;
     background: #f8f9fa;
     border-radius: 15px;
@@ -517,26 +525,41 @@ main {
 
 @media (max-width: 600px) {
     .container {
-        padding: 10px;
+        padding: 15px;
     }
     
     main {
-        padding: 20px;
+        padding: 25px;
     }
     
-    .time-info {
-        grid-template-columns: 1fr;
+    /* 모바일에서도 3열 고정 */
+    .time-cards-container {
+        grid-template-columns: repeat(3, 1fr);
     }
     
+    /* 근무 요약도 3열 고정 */
+    .summary-content {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    /* 휴가 옵션은 무조건 가로 배치 유지 */
     .leave-buttons {
-        flex-direction: column;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
     }
     
     .leave-btn {
-        width: 100%;
+        width: auto;
     }
     
-    .summary-content {
-        grid-template-columns: 1fr;
+    /* action-btn은 모바일에서도 크기 고정 */
+    .action-btn {
+        flex-shrink: 0;
+    }
+    
+    /* 모바일에서도 동일한 간격 유지 */
+    .status-card {
+        gap: 15px;
     }
 } 
